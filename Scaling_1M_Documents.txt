@@ -1,0 +1,97 @@
+Scaling the System to Handle 1M+ Documents
+
+To support more than 1 million documents, I would improve the system in
+the following ways:
+
+1.  Intent Detection using an LLM
+
+-   Before processing a query, use an LLM to identify the user’s intent.
+-   Decide whether the query should use RAG, Text-to-SQL, or a hybrid
+    approach.
+
+2.  Hybrid Retrieval
+
+-   Combine semantic (vector) search, keyword search, and hybrid search
+    for better retrieval accuracy.
+
+3.  Query Rewriting
+
+-   Use an LLM to rewrite short or unclear user questions into better
+    search queries before retrieval.
+
+4.  Batch Embedding Generation & Cost Optimization
+
+-   Generate embeddings in batches instead of one chunk at a time.
+-   Batch processing reduces API calls, improves throughput, and lowers
+    embedding costs.
+-   Route simple queries to smaller LLMs and use larger models only for
+    complex reasoning.
+
+5.  Agent Planner
+
+-   Use an AI agent to decide whether a query should use SQL, RAG, or
+    another workflow.
+
+6.  Summary-Based Retrieval & Metadata Filtering
+
+-   Store document summaries and metadata (project, category, language,
+    upload date).
+-   Filter documents using metadata before vector search.
+-   Search summaries first, then retrieve detailed chunks.
+
+7.  Smarter Chunk Selection
+
+-   Use an LLM to rerank and keep only the most relevant chunks before
+    generating the final answer.
+
+8.  Conversation Memory
+
+-   Include recent chat history in the prompt so the LLM understands
+    follow-up questions and maintains context.
+
+9.  Asynchronous Processing
+
+-   Process documents with Celery and scale workers independently.
+
+10. Optimized Vector Search
+
+-   Use pgvector indexes initially.
+-   For very large datasets, move embeddings to a dedicated vector
+    database such as FAISS, Qdrant, Milvus, Pinecone, or Weaviate.
+
+11. Better Document Chunking
+
+-   Use overlapping chunks with metadata to improve retrieval quality.
+
+12. Caching
+
+-   Cache frequently asked questions, embeddings, summaries, and
+    retrieval results using Redis.
+
+13. Monitoring and Logging
+
+-   Monitor API performance, Celery workers, vector search latency, AI
+    response times, and system health.
+
+14. Rate Limiting
+
+-   Apply user rate limiting and request throttling to prevent abuse.
+
+15. Use LangChain or Similar Frameworks
+
+-   Use LangChain to organize prompts, retrieval pipelines, memory, and
+    agents for better maintainability.
+
+16. Load Balancing
+
+-   Deploy multiple API servers behind a load balancer and scale API
+    servers and Celery workers horizontally.
+
+Conclusion
+
+By combining intelligent intent detection, query rewriting, hybrid
+retrieval, batch embedding generation, conversation memory, agent-based
+decision making, dedicated vector databases, optimized retrieval,
+asynchronous processing, caching, monitoring, and horizontal scaling,
+the system can efficiently handle millions of documents while providing
+fast, accurate, and reliable RAG-based responses.

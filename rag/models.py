@@ -4,7 +4,6 @@ from django.db import models
 
 
 class Document(models.Model):
-
     class Status(models.TextChoices):
         PENDING = "pending", "Pending"
         PROCESSING = "processing", "Processing"
@@ -12,34 +11,27 @@ class Document(models.Model):
         FAILED = "failed", "Failed"
 
     title = models.CharField(max_length=255)
-
     raw_text = models.TextField()
-
     metadata = models.JSONField(
         default=dict,
         blank=True,
     )
-
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
         default=Status.PENDING,
     )
-
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="documents",
     )
-
     created_at = models.DateTimeField(
         auto_now_add=True,
     )
-
     updated_at = models.DateTimeField(
         auto_now=True,
     )
-
     class Meta:
         ordering = ["-created_at"]
 
@@ -54,22 +46,16 @@ class DocumentChunk(models.Model):
         on_delete=models.CASCADE,
         related_name="chunks",
     )
-
     chunk_index = models.PositiveIntegerField()
-
     content = models.TextField()
-
     embedding = VectorField(dimensions=1536)
-
     metadata = models.JSONField(
         default=dict,
         blank=True,
     )
-
     created_at = models.DateTimeField(
         auto_now_add=True,
     )
-
     class Meta:
         ordering = ["chunk_index"]
         unique_together = ("document", "chunk_index")
@@ -85,20 +71,16 @@ class Conversation(models.Model):
         on_delete=models.CASCADE,
         related_name="conversations",
     )
-
     title = models.CharField(
         max_length=255,
         default="New Chat",
     )
-
     created_at = models.DateTimeField(
         auto_now_add=True,
     )
-
     updated_at = models.DateTimeField(
         auto_now=True,
     )
-
     class Meta:
         ordering = ["-updated_at"]
 
@@ -117,19 +99,15 @@ class ConversationMessage(models.Model):
         on_delete=models.CASCADE,
         related_name="messages",
     )
-
     role = models.CharField(
         max_length=20,
         choices=Role.choices,
     )
-
     content = models.TextField()
-
     metadata = models.JSONField(
         default=dict,
         blank=True,
     )
-
     created_at = models.DateTimeField(
         auto_now_add=True,
     )

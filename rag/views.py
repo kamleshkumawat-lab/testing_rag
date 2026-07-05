@@ -10,6 +10,12 @@ from .models import Document, Conversation, ConversationMessage
 from .tasks import process_document
 from .serializers import RegisterSerializer, DocumentSerializer, ConversationSerializer, ConversationMessageSerializer
 from .services import RAGService , TextToSQLService
+from rest_framework.test import APITestCase
+from unittest.mock import patch
+from django.urls import reverse
+from django.contrib.auth.models import User
+
+
 
 # ====================================================
 # 1. FRONTEND TEMPLATE VIEWS (Render HTML Only)
@@ -341,3 +347,101 @@ class ConversationMessageDetailAPIView(APIView):
         message = get_object_or_404(ConversationMessage, id=message_id, conversation=conversation)
         message.delete()
         return Response({"success": True, "message": "Message deleted successfully."}, status=status.HTTP_200_OK)
+    
+
+    
+class RAGAPITestCase(APITestCase):
+
+    def setUp(self):
+
+        self.user = User.objects.create_user(
+            username="testuser",
+            password="test123",
+        )
+
+        login_response = self.client.post(
+            reverse("login"),
+            {
+                "username": "testuser",
+                "password": "test123",
+            },
+            format="json",
+        )
+
+        self.token = login_response.data["data"]["access"]
+
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {self.token}"
+        )
+
+    @patch("rag.tasks.process_document.delay")
+    def test_document_upload(
+        self,
+        mock_task,
+    ):
+
+        payload = {
+            "title": "SEO Guide",
+            "raw_text": (
+                "SEO is the process of improving "
+                "website visibility."
+            ),
+        }
+
+        response = self.client.post(
+            reverse("document-upload"),
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        self.assertTrue(
+            Document.objects.filter(
+                title="SEO Guide"
+            ).exists()
+        )
+
+        mock_task.assert_called_once()
+
+    @patch("rag.services.RAGService.generate_response")
+    def test_query_endpoint(
+        self,
+        mock_generate,
+    ):
+
+        conversation = Conversation.objects.create(
+            user=self.user,
+            title="New Chat",
+        )
+
+        mock_generate.return_value = {
+            "answer": "SEO improves website ranking.",
+            "assistant_message": None,
+            "sources": [],
+        }
+
+        response = self.client.post(
+            reverse(
+                "conversation-message",
+                kwargs={
+                    "conversation_id": conversation.id,
+                },
+            ),
+            {
+                "question": "What is SEO?"
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        self.assertTrue(
+            response.data["success"]
+        )
