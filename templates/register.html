@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Harshwal AI</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col justify-between font-sans selection:bg-cyan-500 selection:text-gray-950">
+
+    <header class="border-b border-gray-900 w-full bg-gray-950/80 backdrop-blur-md">
+        <div class="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
+            <a href="{% url 'home' %}" class="flex items-center space-x-3 group">
+                <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center font-extrabold text-white text-xl shadow-lg shadow-cyan-500/20">H</div>
+                <span class="text-xl font-bold tracking-wide bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent group-hover:text-white transition">Harshwal AI</span>
+            </a>
+            <div>
+                <a href="{% url 'login' %}" class="text-sm font-semibold text-gray-300 hover:text-white transition">Sign In Instead</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 flex flex-col justify-center items-center px-6 py-12 relative">
+        <div class="absolute w-72 h-72 bg-blue-500/5 rounded-full blur-3xl top-1/4 pointer-events-none"></div>
+
+        <div class="max-w-md w-full bg-gray-900/40 border border-gray-900 p-8 rounded-2xl shadow-2xl relative backdrop-blur-sm">
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center space-x-1 bg-cyan-950/50 border border-cyan-900 text-[10px] text-cyan-400 font-mono px-2.5 py-0.5 rounded-full mb-3 uppercase tracking-wider">
+                    Engine Cluster Registration
+                </div>
+                <h2 class="text-2xl font-black tracking-tight text-white">Create Cluster Node</h2>
+                <p class="text-gray-400 text-xs mt-1">Initialize your enterprise vector memory keys</p>
+            </div>
+
+            <div id="error-banner" class="hidden bg-red-950/40 border border-red-900 text-red-400 text-xs p-3 rounded-xl mb-6">
+                <p id="error-message"></p>
+            </div>
+
+            <form id="register-form" class="space-y-5">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-xs font-mono uppercase tracking-wider text-gray-400 mb-2">Username</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-user absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 text-xs"></i>
+                        <input type="text" name="username" required class="w-full bg-gray-950 border border-gray-800 focus:border-cyan-500 focus:outline-none rounded-xl py-3 pl-11 pr-4 text-sm font-sans transition placeholder-gray-700" placeholder="e.g., node_admin">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-mono uppercase tracking-wider text-gray-400 mb-2">Email Address</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 text-xs"></i>
+                        <input type="email" name="email" required class="w-full bg-gray-950 border border-gray-800 focus:border-cyan-500 focus:outline-none rounded-xl py-3 pl-11 pr-4 text-sm font-sans transition placeholder-gray-700" placeholder="admin@domain.com">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-mono uppercase tracking-wider text-gray-400 mb-2">System Password</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 text-xs"></i>
+                        <input type="password" name="password" required class="w-full bg-gray-950 border border-gray-800 focus:border-cyan-500 focus:outline-none rounded-xl py-3 pl-11 pr-4 text-sm font-sans transition placeholder-gray-700" placeholder="••••••••">
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-gray-950 font-bold py-3.5 rounded-xl text-sm transition shadow-lg shadow-cyan-500/10 flex items-center justify-center space-x-2 cursor-pointer mt-2">
+                    <span>Provision Credentials</span>
+                    <i class="fa-solid fa-bolt text-xs"></i>
+                </button>
+            </form>
+        </div>
+    </main>
+
+    <footer class="border-t border-gray-900 text-center py-6 text-[10px] text-gray-600 font-mono w-full">
+        &copy; 2026 Harshwal AI Systems Inc. • Node Protocol Handshake Secure
+    </footer>
+
+    <script>
+        document.getElementById('register-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const form = e.target;
+            const errorBanner = document.getElementById('error-banner');
+            const errorMessage = document.getElementById('error-message');
+            
+            errorBanner.classList.add('hidden');
+            
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+
+            try {
+                // FIXED: Hit targeted backend endpoint at "/api/register/"
+                const response = await fetch("{% url 'api-register' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': data.csrfmiddlewaretoken
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    // Store tokens instantly
+                    localStorage.setItem('access_token', result.data.access);
+                    localStorage.setItem('refresh_token', result.data.refresh);
+                    
+                    // Route user straight onto the secure dashboard
+                    window.location.href = "{% url 'dashboard' %}";
+                } else {
+                    errorBanner.classList.remove('hidden');
+                    if (result.errors) {
+                        // Formatting DRF dictionary errors gracefully
+                        let formattedErrors = "";
+                        for (const [key, value] of Object.entries(result.errors)) {
+                            formattedErrors += `${key}: ${value.join(', ')} `;
+                        }
+                        errorMessage.innerText = formattedErrors;
+                    } else {
+                        errorMessage.innerText = result.message || 'Registration pipeline execution refused.';
+                    }
+                }
+            } catch (err) {
+                errorBanner.classList.remove('hidden');
+                errorMessage.innerText = 'Network error during node registration compilation.';
+            }
+        });
+    </script>
+</body>
+</html>

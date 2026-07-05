@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Core Console - Harshwal AI</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Custom scrollbar matching ChatGPT dark theme */
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #27272a; border-radius: 9999px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+    </style>
+</head>
+<body class="bg-gray-950 text-gray-100 h-screen flex font-sans selection:bg-cyan-500 selection:text-gray-950 select-none">
+
+    <aside class="w-80 border-r border-gray-900 bg-gray-950 flex flex-col shrink-0 hidden md:flex">
+        <div class="p-4 border-b border-gray-900 h-20 flex items-center justify-between">
+            <a href="/dashboard/" class="flex items-center space-x-2 font-bold text-white text-sm">
+                <div class="h-8 w-8 bg-cyan-500 text-gray-950 font-black rounded-lg flex items-center justify-center">H</div>
+                <span>Harshwal AI Terminal</span>
+            </a>
+            <button onclick="createNewChat()" class="h-8 w-8 border border-gray-800 hover:border-gray-700 rounded-lg flex items-center justify-center text-gray-400 hover:text-cyan-400 transition cursor-pointer" title="New Chat">
+                <i class="fa-solid fa-plus text-xs"></i>
+            </button>
+        </div>
+        
+        <div id="sidebar-history-container" class="flex-1 overflow-y-auto p-3 space-y-1 custom-scroll">
+            </div>
+    </aside>
+
+    <div class="flex-1 flex flex-col min-w-0 bg-gray-900/10">
+        <header class="h-20 bg-gray-950 border-b border-gray-900 flex items-center justify-between px-6 shrink-0">
+            <div class="flex items-center space-x-4 min-w-0">
+                <a href="/dashboard/" class="md:hidden h-9 w-9 border border-gray-800 flex items-center justify-center rounded-xl text-gray-400"><i class="fa-solid fa-arrow-left"></i></a>
+                <div class="min-w-0">
+                    <h1 id="chat-title" class="text-sm font-bold text-white truncate max-w-xs">Connecting Stream Link...</h1>
+                    <p class="text-[9px] font-mono text-cyan-400 uppercase tracking-wider">Vector Cluster Context Array Layer</p>
+                </div>
+            </div>
+            
+            <div>
+                <a href="/dashboard/" class="text-xs bg-gray-900 border border-gray-800 text-gray-400 hover:text-white px-3 py-1.5 rounded-xl transition">
+                    <i class="fa-solid fa-table-columns mr-1.5"></i>Console Dashboard
+                </a>
+            </div>
+        </header>
+
+        <main id="chat-box" class="flex-1 overflow-y-auto p-6 space-y-6 custom-scroll">
+            <div id="fallback-loader" class="h-full flex items-center justify-center flex-col text-gray-600 space-y-2 font-mono text-xs">
+                <i class="fa-solid fa-circle-notch animate-spin text-cyan-500 text-lg"></i>
+                <span>Synchronizing targeted pipeline session graph...</span>
+            </div>
+        </main>
+
+        <footer class="p-4 bg-gray-950 border-t border-gray-900">
+            <div class="max-w-4xl mx-auto relative">
+                <div id="thinking-indicator" class="hidden absolute -top-8 left-2 flex items-center space-x-2 text-xs text-cyan-400 font-mono">
+                    <i class="fa-solid fa-microchip animate-pulse"></i>
+                    <span class="animate-pulse">RAG Engine matching context matrices & streaming OpenAI models...</span>
+                </div>
+
+                <form id="message-form" class="relative flex items-center">
+                    <input id="prompt-input" type="text" autocomplete="off" required placeholder="Query multi-layer index datasets here..." 
+                           class="w-full bg-gray-900 border border-gray-800 focus:border-cyan-500 focus:outline-none rounded-2xl py-4 pl-5 pr-14 text-sm text-gray-100 transition disabled:opacity-50">
+                    <button type="submit" id="submit-btn" class="absolute right-3 h-10 w-10 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-gray-950 flex items-center justify-center shadow-lg cursor-pointer shadow-cyan-500/10">
+                        <i id="btn-icon" class="fa-solid fa-paper-plane text-xs"></i>
+                    </button>
+                </form>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        const accessToken = localStorage.getItem('access_token');
+        let currentConversationId = "{{ conversation_id }}";
+
+        if (!accessToken) { window.location.href = "/login/"; }
+
+        const chatBox = document.getElementById('chat-box');
+        const chatTitle = document.getElementById('chat-title');
+        const promptInput = document.getElementById('prompt-input');
+        const submitBtn = document.getElementById('submit-btn');
+        const btnIcon = document.getElementById('btn-icon');
+        const thinkingIndicator = document.getElementById('thinking-indicator');
+
+        // Render message components to the workspace box area
+        def = function appendMessage(role, content) {
+            const wrapper = document.createElement('div');
+            wrapper.className = `flex w-full ${role === 'user' ? 'justify-end' : 'justify-start'}`;
+            
+            // Checking if response is from OpenAI Assistant to append standard styling
+            const messageStyle = role === 'user' 
+                ? 'bg-gradient-to-br from-cyan-600 to-blue-700 text-white rounded-br-none' 
+                : 'bg-gray-900 border border-gray-800 text-gray-200 rounded-bl-none';
+
+            wrapper.innerHTML = `
+                <div class="max-w-[75%] rounded-2xl p-4 text-sm leading-relaxed shadow-lg ${messageStyle}">
+                    <div class="font-mono text-[9px] uppercase tracking-wider mb-1 text-gray-400/80">${role === 'user' ? 'You' : 'Harshwal AI Core'}</div>
+                    <div class="whitespace-pre-line">${content}</div>
+                </div>`;
+            chatBox.appendChild(wrapper);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // Sidebar Loader: Dynamic integration for Hover Rename/Delete controls (Like ChatGPT)
+        async function loadSidebarHistory() {
+            try {
+                const response = await fetch("/api/conversations/", {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+                const res = await response.json();
+                if (response.ok && res.success) {
+                    const sideContainer = document.getElementById('sidebar-history-container');
+                    sideContainer.innerHTML = '';
+                    
+                    res.data.forEach(item => {
+                        const isActive = item.id == currentConversationId;
+                        const activeStyle = isActive 
+                            ? 'bg-cyan-950/40 border-cyan-800/60 text-cyan-400 font-medium' 
+                            : 'hover:bg-gray-900 text-gray-400 border-transparent hover:text-gray-200';
+                        
+                        // Creating item layout node with interactive action targets
+                        sideContainer.innerHTML += `
+                            <div class="flex items-center justify-between group rounded-xl border px-3 py-2.5 transition text-xs ${activeStyle}">
+                                <a href="/conversations/${item.id}/" class="flex items-center space-x-2.5 min-w-0 flex-1 truncate pr-2">
+                                    <i class="fa-solid fa-message text-[10px] shrink-0 ${isActive ? 'text-cyan-400' : 'text-gray-600'}"></i>
+                                    <span class="truncate" id="sidebar-title-${item.id}">${item.title}</span>
+                                </a>
+                                <div class="opacity-0 group-hover:opacity-100 flex items-center space-x-1.5 transition shrink-0 ml-1">
+                                    <button onclick="inlineRenameChat(${item.id}, '${item.title}')" class="text-gray-500 hover:text-cyan-400 cursor-pointer p-0.5" title="Rename"><i class="fa-solid fa-pencil text-[11px]"></i></button>
+                                    <button onclick="inlineDeleteChat(${item.id})" class="text-gray-500 hover:text-red-400 cursor-pointer p-0.5" title="Delete"><i class="fa-solid fa-trash-can text-[11px]"></i></button>
+                                </div>
+                            </div>`;
+                    });
+                }
+            } catch (err) { console.error("History stack fetching sequence error", err); }
+        }
+
+        // Fetch logs trace timeline messages
+        async function syncChatWindow() {
+            try {
+                const metaRes = await fetch(`/api/conversations/${currentConversationId}/`, {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+                const metaData = await metaRes.json();
+                if(metaRes.ok && metaData.success) { chatTitle.innerText = metaData.data.title; }
+
+                const msgRes = await fetch(`/api/conversations/${currentConversationId}/messages/`, {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+                const msgData = await msgRes.json();
+                
+                if (document.getElementById('fallback-loader')) { document.getElementById('fallback-loader').remove(); }
+                chatBox.innerHTML = '';
+
+                if (msgRes.ok && msgData.success) {
+                    msgData.data.forEach(m => def(m.role, m.content));
+                }
+            } catch (err) { chatTitle.innerText = "Sync Connection Interrupted"; }
+        }
+
+        // Inline Action Rename Sequence (No Dashboard Redirect)
+        async function inlineRenameChat(id, currentTitle) {
+            const revisedTitle = prompt("Provide revised terminal conversation title context:", currentTitle);
+            if (!revisedTitle || revisedTitle.trim() === "" || revisedTitle === currentTitle) return;
+
+            try {
+                const response = await fetch(`/api/conversations/${id}/`, {
+                    method: 'PATCH',
+                    headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title: revisedTitle })
+                });
+                const res = await response.json();
+                if (response.ok && res.success) {
+                    // Update main title if it matches current active chat session 
+                    if (id == currentConversationId) {
+                        chatTitle.innerText = res.data.title;
+                    }
+                    loadSidebarHistory(); // Inline side list reload without shifting windows
+                }
+            } catch (err) { alert('Rename pipeline error.'); }
+        }
+
+        // Inline Action Delete Sequence (No Dashboard Redirect unless active chat is purged)
+        async function inlineDeleteChat(id) {
+            if (!confirm("Are you sure you want to permanently delete this chat session context chain?")) return;
+            
+            try {
+                const response = await fetch(`/api/conversations/${id}/`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+                if (response.ok) {
+                    // If user deletes the active viewing screen chat, shift back to dashboard
+                    if (id == currentConversationId) {
+                        window.location.href = "/dashboard/";
+                    } else {
+                        loadSidebarHistory(); // Safe inline update matrix reload
+                    }
+                }
+            } catch (err) { alert('Purge command refused by core.'); }
+        }
+
+        // Create New Chat Handler
+        async function createNewChat() {
+            try {
+                const response = await fetch("/api/conversations/", {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title: "New Chat" })
+                });
+                const res = await response.json();
+                if(response.ok && res.success) { window.location.href = `/conversations/${res.data.id}/`; }
+            } catch(e) {}
+        }
+
+        // Submit query handler hook linked with custom AI RAG service loader
+        document.getElementById('message-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const question = promptInput.value.trim();
+            if(!question) return;
+
+            def('user', question);
+            promptInput.value = '';
+
+            // Set Lock parameters for model stream layer tracking
+            promptInput.disabled = true;
+            submitBtn.disabled = true;
+            btnIcon.className = "fa-solid fa-circle-notch animate-spin text-xs";
+            thinkingIndicator.classList.remove('hidden'); // Show dynamic AI processing text layer
+
+            try {
+                const response = await fetch(`/api/conversations/${currentConversationId}/messages/`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question: question })
+                });
+                const res = await response.json();
+                if (response.ok && res.success) {
+                    // Injecting OpenAI response array context dynamically onto interface grid
+                    def('assistant', res.data.assistant_message.content);
+                    
+                    // If title changes dynamically after the first prompt message, sync sidebars instantly
+                    if (res.data.conversation_title) {
+                        chatTitle.innerText = res.data.conversation_title;
+                    }
+                    loadSidebarHistory();
+                }
+            } catch (err) { def('assistant', "Handshake anomaly error matching vectors."); }
+            finally {
+                promptInput.disabled = false;
+                submitBtn.disabled = false;
+                btnIcon.className = "fa-solid fa-paper-plane text-xs";
+                thinkingIndicator.classList.add('hidden'); // Hide dynamic loader state tracking array
+                promptInput.focus();
+            }
+        });
+
+        // Initialize Execution Cycles
+        loadSidebarHistory();
+        syncChatWindow();
+    </script>
+</body>
+</html>

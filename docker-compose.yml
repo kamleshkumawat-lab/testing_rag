@@ -1,0 +1,69 @@
+
+services:
+  web:
+    build: .
+    container_name: testrag_web
+
+    command: >
+      sh -c "
+      python manage.py migrate &&
+      python manage.py runserver 0.0.0.0:8005
+      "
+
+    volumes:
+      - .:/app
+
+    ports:
+      - "8005:8005"
+
+    env_file:
+      - .env
+
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: testrag_db
+    restart: always
+
+    env_file:
+      - .env
+
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+    ports:
+      - "5433:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: testrag_redis
+
+    ports:
+      - "6379:6379"
+
+  celery:
+    build: .
+    container_name: testrag_celery
+
+    command: celery -A config worker -l info
+
+    volumes:
+      - .:/app
+
+    env_file:
+      - .env
+
+    depends_on:
+      - db
+      - redis
+
+volumes:
+  postgres_data:
